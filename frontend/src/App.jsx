@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
@@ -15,6 +16,11 @@ function App() {
     }
   ]);
 
+  const [documents, setDocuments] = useState([]);
+  const [mode, setMode] = useState(
+      "Process Optimization"
+    );
+
   const messagesEndRef = useRef(null);
 
   // Auto scroll
@@ -25,38 +31,93 @@ function App() {
   }, [messages]);
 
   // create typing function
-  const typeMessage = async (fullText) => {
+  const typeMessage = async (fullText, sources = []) => {
 
-  let currentText = "";
+    let currentText = "";
 
-  const aiMessage = {
-    role: "assistant",
-    text: ""
+    const aiMessage = {
+      role: "assistant",
+      text: "",
+      sources: sources
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+
+    for (let i = 0; i < fullText.length; i++) {
+
+      currentText += fullText[i];
+
+      setMessages((prev) => {
+
+        const updated = [...prev];
+
+        updated[updated.length - 1] = {
+          role: "assistant",
+          text: currentText,
+          sources: sources
+        };
+
+        return updated;
+      });
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 10)
+      );
+    }
   };
 
-  setMessages((prev) => [...prev, aiMessage]);
+  const uploadPDF = async (event) => {
 
-  for (let i = 0; i < fullText.length; i++) {
+      const file = event.target.files[0];
 
-    currentText += fullText[i];
+      if (!file) return;
 
-    setMessages((prev) => {
+      const formData = new FormData();
 
-      const updated = [...prev];
+      formData.append("file", file);
 
-      updated[updated.length - 1] = {
-        role: "assistant",
-        text: currentText
-      };
+      try {
 
-      return updated;
-    });
+        setLoading(true);
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, 10)
-    );
-  }
-};
+        const res = await axios.post(
+          "http://127.0.0.1:8000/upload",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data"
+            }
+          }
+        );
+
+        const uploadMessage = {
+          role: "assistant",
+          text: `✅ PDF Uploaded Successfully\n\nFile: ${res.data.filename}\nChunks Created: ${res.data.total_chunks}`
+        };
+        setDocuments((prev) => [
+          ...prev,
+          res.data.filename
+        ]);
+        setMessages((prev) => [
+          ...prev,
+          uploadMessage
+        ]);
+
+      } catch (error) {
+
+        const errorMessage = {
+          role: "assistant",
+          text: "❌ PDF Upload Failed"
+        };
+
+        setMessages((prev) => [
+          ...prev,
+          errorMessage
+        ]);
+      }
+
+      setLoading(false);
+    };
 
   const sendMessage = async () => {
 
@@ -80,12 +141,14 @@ function App() {
       const res = await axios.post(
         "http://127.0.0.1:8000/chat",
         {
-          message: currentMessage
+          message: currentMessage,
+          mode : mode
         }
       );
 
       await typeMessage(
-        res.data.response || res.data.error
+        res.data.response || res.data.error,
+        res.data.sources || []
       );
 
     } catch (error) {
@@ -114,19 +177,72 @@ function App() {
           Process AI
         </h1>
 
+        <label className="bg-emerald-400 hover:bg-emerald-300 text-black font-bold p-4 rounded-2xl cursor-pointer text-center transition duration-300 shadow-lg">
+
+          Upload PDF
+
+          <input
+            type="file"
+            accept=".pdf"
+            hidden
+            onChange={uploadPDF}
+          />
+
+        </label>
+
+        <div className="mt-8">
+
+          <h3 className="text-slate-400 text-sm uppercase tracking-widest mb-4">
+            Knowledge Base
+          </h3>
+
+          <div className="space-y-3">
+
+            {documents.length === 0 ? (
+
+              <div className="text-slate-500 text-sm">
+                No PDFs Uploaded
+              </div>
+
+            ) : (
+
+              documents.map((doc, index) => (
+
+                <div
+                  key={index}
+                  className="bg-slate-800/70 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 truncate"
+                >
+                  📄 {doc}
+                </div>
+
+              ))
+            )}
+
+          </div>
+
+        </div>
+
         <div className="space-y-4">
 
-          <div className="bg-slate-800/70 hover:bg-slate-700 transition duration-300 p-4 rounded-2xl cursor-pointer border border-slate-700 shadow-lg">
-            Process Optimization
-          </div>
+          {[
+            "Process Optimization",
+            "Safety Analysis",
+            "Equipment Diagnostics"
+          ].map((item) => (
 
-          <div className="bg-slate-800/70 hover:bg-slate-700 transition duration-300 p-4 rounded-2xl cursor-pointer border border-slate-700 shadow-lg">
-            Safety Analysis
-          </div>
+            <div
+              key={item}
+              onClick={() => setMode(item)}
+              className={`p-4 rounded-2xl cursor-pointer border shadow-lg transition duration-300 ${
+                mode === item
+                  ? "bg-emerald-400 text-black border-emerald-300"
+                  : "bg-slate-800/70 hover:bg-slate-700 border-slate-700 text-white"
+              }`}
+            >
+              {item}
+            </div>
 
-          <div className="bg-slate-800/70 hover:bg-slate-700 transition duration-300 p-4 rounded-2xl cursor-pointer border border-slate-700 shadow-lg">
-            Equipment Diagnostics
-          </div>
+          ))}
 
         </div>
 
@@ -134,10 +250,13 @@ function App() {
 
       {/* Main Area */}
 
-      <div className="flex-1 flex flex-col">
+      {/* Main Area */}
+
+      <div className="flex-1 flex">
+        <div className="flex-1 flex flex-col"> 
 
         {/* Header */}
-
+   
         <div className="border-b border-slate-800 p-6 bg-slate-950/70 backdrop-blur-xl">
 
           <h2 className="text-4xl font-bold tracking-wide">
@@ -152,8 +271,19 @@ function App() {
 
           {messages.map((msg, index) => (
 
-            <div
+            <motion.div
               key={index}
+              initial={{
+                opacity: 0,
+                y: 20
+              }}
+              animate={{
+                opacity: 1,
+                y: 0
+              }}
+              transition={{
+                duration: 0.4
+              }}
               className={`flex ${
                 msg.role === "user"
                   ? "justify-end"
@@ -173,9 +303,37 @@ function App() {
                   {msg.text}
                 </ReactMarkdown>
 
+                {
+                  msg.sources && msg.sources.length > 0 && (
+
+                    <details className="mt-5">
+
+                      <summary className="cursor-pointer text-emerald-400 font-semibold">
+                        View Process Logic
+                      </summary>
+
+                      <div className="mt-4 space-y-4">
+
+                        {msg.sources.map((source, index) => (
+
+                          <div
+                            key={index}
+                            className="bg-slate-900 border border-slate-700 p-4 rounded-2xl text-sm text-slate-300 leading-7"
+                          >
+                            {source}
+                          </div>
+
+                        ))}
+
+                      </div>
+
+                    </details>
+                  )
+                }
+
               </div>
 
-            </div>
+            </motion.div>
 
           ))}
 
@@ -183,7 +341,15 @@ function App() {
 
           {loading && (
 
-            <div className="flex justify-start">
+            <motion.div
+              initial={{
+                opacity: 0
+              }}
+              animate={{
+                opacity: 1
+              }}
+              className="flex justify-start"
+            >
 
               <div className="bg-slate-800 border border-slate-700 px-6 py-4 rounded-3xl flex gap-2">
 
@@ -195,7 +361,7 @@ function App() {
 
               </div>
 
-            </div>
+            </motion.div>
 
           )}
 
@@ -228,6 +394,116 @@ function App() {
             >
               Send
             </button>
+
+          </div>
+
+          </div>
+
+        </div>
+
+        {/* Knowledge Panel */}
+
+        <div className="w-96 border-l border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 flex flex-col">
+
+          <h2 className="text-2xl font-bold text-emerald-400 mb-8">
+            Knowledge Hub
+          </h2>
+
+          {/* System Status */}
+
+          <div className="bg-slate-800/70 border border-slate-700 rounded-2xl p-5 mb-6">
+
+            <h3 className="text-lg font-semibold mb-4">
+              System Status
+            </h3>
+
+            <div className="space-y-3 text-sm">
+
+              <div className="flex justify-between">
+                <span className="text-slate-400">
+                  AI Engine
+                </span>
+
+                <span className="text-emerald-400">
+                  Online
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-slate-400">
+                  Documents
+                </span>
+
+                <span>
+                  {documents.length}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-slate-400">
+                  Vector DB
+                </span>
+
+                <span className="text-emerald-400">
+                  Active
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Active Documents */}
+
+          <div className="flex-1">
+
+            <h3 className="text-lg font-semibold mb-4">
+              Active Documents
+            </h3>
+
+            <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2">
+
+              {documents.length === 0 ? (
+
+                <div className="text-slate-500 text-sm">
+                  No documents loaded
+                </div>
+
+              ) : (
+
+                documents.map((doc, index) => (
+
+                  <motion.div
+                    key={index}
+                    initial={{
+                      opacity: 0,
+                      x: 20
+                    }}
+                    animate={{
+                      opacity: 1,
+                      x: 0
+                    }}
+                    className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4"
+                  >
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="w-10 h-10 rounded-xl bg-emerald-400/20 flex items-center justify-center text-emerald-400">
+                        📄
+                      </div>
+
+                      <div className="truncate text-sm">
+                        {doc}
+                      </div>
+
+                    </div>
+
+                  </motion.div>
+
+                ))
+              )}
+
+            </div>
 
           </div>
 
