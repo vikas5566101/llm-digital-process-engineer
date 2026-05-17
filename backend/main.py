@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import UploadFile, File
+from pypdf import PdfReader
+import shutil
 
 from google import genai
 import os
@@ -57,3 +60,26 @@ async def chat(request: ChatRequest):
         return {
             "error": str(e)
         }
+
+@app.post("/upload")
+async def upload_pdf(file: UploadFile = File(...)):
+
+    file_path = f"uploads/{file.filename}"
+
+    # Save uploaded file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Read PDF
+    reader = PdfReader(file_path)
+
+    text = ""
+
+    # Extract text from all pages
+    for page in reader.pages:
+        text += page.extract_text()
+
+    return {
+        "filename": file.filename,
+        "text": text[:3000]
+    }
