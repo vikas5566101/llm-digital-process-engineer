@@ -16,10 +16,14 @@ function App() {
     }
   ]);
 
+  const [chatHistory, setChatHistory] = useState([]);
+
   const [documents, setDocuments] = useState([]);
   const [mode, setMode] = useState(
       "Process Optimization"
     );
+  
+  const [activePDF, setActivePDF] = useState("");
 
   const messagesEndRef = useRef(null);
 
@@ -98,6 +102,9 @@ function App() {
           ...prev,
           res.data.filename
         ]);
+
+        setActivePDF(res.data.filename);
+
         setMessages((prev) => [
           ...prev,
           uploadMessage
@@ -130,6 +137,14 @@ function App() {
 
     setMessages((prev) => [...prev, userMessage]);
 
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        role: "user",
+        text: currentMessage
+      }
+    ]);
+
     const currentMessage = message;
 
     setMessage("");
@@ -142,7 +157,8 @@ function App() {
         "http://127.0.0.1:8000/chat",
         {
           message: currentMessage,
-          mode : mode
+          mode : mode,
+          history: chatHistory
         }
       );
 
@@ -150,6 +166,14 @@ function App() {
         res.data.response || res.data.error,
         res.data.sources || []
       );
+
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: res.data.response || res.data.error
+        }
+      ]);
 
     } catch (error) {
 
@@ -320,7 +344,23 @@ function App() {
                             key={index}
                             className="bg-slate-900 border border-slate-700 p-4 rounded-2xl text-sm text-slate-300 leading-7"
                           >
-                            {source}
+                            <div className="text-emerald-400 text-xs mb-3">
+
+                              Source: {source.source}
+
+                              <br />
+
+                              Chunk: {source.chunk}
+
+                              <br />
+
+                              Relevance: {source.score}
+
+                            </div>
+
+                            <div>
+                              {source.text}
+                            </div>
                           </div>
 
                         ))}
@@ -342,6 +382,8 @@ function App() {
           {loading && (
 
             <motion.div
+              
+              onClick={() => setActivePDF(doc)}
               initial={{
                 opacity: 0
               }}
@@ -501,6 +543,36 @@ function App() {
                   </motion.div>
 
                 ))
+              )}
+
+            </div>
+
+          </div>
+
+          {/* PDF Preview */}
+
+          <div className="mt-8">
+
+            <h3 className="text-lg font-semibold mb-4">
+              PDF Preview
+            </h3>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden h-[400px]">
+
+              {activePDF ? (
+
+                <iframe
+                  src={`http://127.0.0.1:8000/uploads/${activePDF}`}
+                  title="PDF Preview"
+                  className="w-full h-full"
+                />
+
+              ) : (
+
+                <div className="h-full flex items-center justify-center text-slate-500">
+                  No PDF Selected
+                </div>
+
               )}
 
             </div>

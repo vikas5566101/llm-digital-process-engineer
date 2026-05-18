@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import UploadFile, File
 
+
 from pypdf import PdfReader
 
 import shutil
@@ -12,6 +13,7 @@ import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from langchain_chroma import Chroma
+from fastapi.staticfiles import StaticFiles
 
 from google import genai
 
@@ -36,6 +38,12 @@ vector_store = Chroma(
 # FastAPI App
 app = FastAPI()
 
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads"
+)
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -49,6 +57,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     mode: str
+    history: list = []
 
 # Home Route
 @app.get("/")
@@ -65,15 +74,39 @@ async def chat(request: ChatRequest):
     try:
 
         # Search relevant chunks
-        results = vector_store.similarity_search(
+        results = vector_store.similarity_search_with_score(
             request.message,
-            k=3
+            k=4
         )
 
         # Combine retrieved context
-        context = "\n\n".join(
-            [doc.page_content for doc in results]
-        )
+        context = ""
+
+        sources = []
+
+        for doc, score in results:
+
+            metadata = doc.metadata
+
+            source_info = {
+                "text": doc.page_content,
+                "source": metadata.get("source", "Unknown"),
+                "chunk": metadata.get("chunk", 0),
+                "score": round(score, 4)
+            }
+
+            sources.append(source_info)
+
+            context += doc.page_content + "\n\n"
+
+        history_text = ""
+
+        for msg in request.history[-6:]:
+
+            history_text += f"""
+            {msg['role']}:
+            {msg['text']}
+            """
 
         system_prompt = ""
 
@@ -109,6 +142,9 @@ async def chat(request: ChatRequest):
 
         DOCUMENT CONTEXT:
         {context}
+        
+        CONVERSATION HISTORY:
+        {history_text}
 
         USER QUESTION:
         {request.message}
@@ -122,9 +158,8 @@ async def chat(request: ChatRequest):
 
         return {
             "response": response.text,
-            "sources": [
-                doc.page_content for doc in results
-            ]
+            "sources": sources
+            
         }
 
     except Exception as e:
@@ -174,6 +209,10 @@ async def upload_pdf(file: UploadFile = File(...)):
 
             vector_store.add_texts(
                 texts=[chunk],
+                metadatas=[{
+                    "source": file.filename,
+                    "chunk": i
+                }],
                 ids=[f"{file.filename}_{i}"]
             )
 
