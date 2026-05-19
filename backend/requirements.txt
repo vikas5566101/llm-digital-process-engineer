@@ -6,14 +6,10 @@ pypdf
 
 google-genai
 
-sentence-transformers
-
 langchain
 langchain-chroma
 langchain-text-splitters
 
 chromadb
-
-torch
 
 numpy

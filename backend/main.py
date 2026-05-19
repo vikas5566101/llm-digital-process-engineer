@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.middleware.cors import CORSMiddleware
 from fastapi import UploadFile, File
 
 
@@ -26,9 +26,9 @@ client = genai.Client(
 )
 
 # Embedding Model
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+# embedding_model = SentenceTransformer(
+#     "all-MiniLM-L6-v2"
+# )
 
 vector_store = Chroma(
     collection_name="process_docs",
