@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from dotenv import load_dotenv
-# from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import UploadFile, File
 
 
@@ -30,10 +30,10 @@ client = genai.Client(
 #     "all-MiniLM-L6-v2"
 # )
 
-vector_store = Chroma(
-    collection_name="process_docs",
-    persist_directory="chroma_db"
-)
+# vector_store = Chroma(
+#     collection_name="process_docs",
+#     persist_directory="chroma_db"
+# )
 
 # FastAPI App
 app = FastAPI()
@@ -44,7 +44,7 @@ app.mount(
     name="uploads"
 )
 
-# Enable CORS
+#Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -74,30 +74,33 @@ async def chat(request: ChatRequest):
     try:
 
         # Search relevant chunks
-        results = vector_store.similarity_search_with_score(
-            request.message,
-            k=4
-        )
+        # results = vector_store.similarity_search_with_score(
+        #     request.message,
+        #     k=4
+        # )
 
-        # Combine retrieved context
+        # # Combine retrieved context
+        # context = ""
+
+        # sources = []
+
+        # for doc, score in results:
+
+        #     metadata = doc.metadata
+
+        #     source_info = {
+        #         "text": doc.page_content,
+        #         "source": metadata.get("source", "Unknown"),
+        #         "chunk": metadata.get("chunk", 0),
+        #         "score": round(score, 4)
+        #     }
+
+        #     sources.append(source_info)
+
+        #     context += doc.page_content + "\n\n"
         context = ""
-
         sources = []
 
-        for doc, score in results:
-
-            metadata = doc.metadata
-
-            source_info = {
-                "text": doc.page_content,
-                "source": metadata.get("source", "Unknown"),
-                "chunk": metadata.get("chunk", 0),
-                "score": round(score, 4)
-            }
-
-            sources.append(source_info)
-
-            context += doc.page_content + "\n\n"
 
         history_text = ""
 
@@ -195,32 +198,34 @@ async def upload_pdf(file: UploadFile = File(...)):
                 text += extracted
 
         # Text Chunking
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
+        # splitter = RecursiveCharacterTextSplitter(
+        #     chunk_size=1000,
+        #     chunk_overlap=200
+        # )
 
-        chunks = splitter.split_text(text)
+        # chunks = splitter.split_text(text)
 
         
 
         # Store chunks in ChromaDB
-        for i, chunk in enumerate(chunks):
+        # for i, chunk in enumerate(chunks):
 
-            vector_store.add_texts(
-                texts=[chunk],
-                metadatas=[{
-                    "source": file.filename,
-                    "chunk": i
-                }],
-                ids=[f"{file.filename}_{i}"]
-            )
+        #     vector_store.add_texts(
+        #         texts=[chunk],
+        #         metadatas=[{
+        #             "source": file.filename,
+        #             "chunk": i
+        #         }],
+        #         ids=[f"{file.filename}_{i}"]
+        #     )
+        chunks = [text]
 
         return {
             "filename": file.filename,
             "total_chunks": len(chunks),
             "message": "PDF processed and stored successfully"
         }
+        
 
     except Exception as e:
 
