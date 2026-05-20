@@ -197,7 +197,7 @@ function App() {
 
       {/* Sidebar */}
 
-      <div className="w-72 bg-slate-900/80 backdrop-blur-xl border-r border-slate-800 p-5 flex flex-col">
+      <div className="w-[260px] lg:w-72 bg-slate-900/80 backdrop-blur-xl border-r border-slate-800 p-5 flex flex-col">
 
         <h1 className="text-3xl font-bold text-emerald-400 mb-10 tracking-wide">
           Process AI
@@ -277,7 +277,6 @@ function App() {
 
       {/* Main Area */}
 
-      {/* Main Area */}
 
       <div className="flex-1 flex">
         <div className="flex-1 flex flex-col"> 
@@ -448,9 +447,9 @@ function App() {
 
         {/* Knowledge Panel */}
 
-        <div className="w-96 border-l border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 flex flex-col">
+        <div className="hidden xl:flex xl:w-96 border-l border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 flex flex-col">
 
-          <h2 className="text-2xl font-bold text-emerald-400 mb-8">
+          <h2 className="text-2xl md:text-4xl font-bold text-emerald-400 mb-8">
             Knowledge Hub
           </h2>
 

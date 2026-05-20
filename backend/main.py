@@ -9,6 +9,7 @@ from pypdf import PdfReader
 
 import shutil
 import os
+os.makedirs("uploads", exist_ok=True)
 
 # from langchain_text_splitters import RecursiveCharacterTextSplitter
 # from sentence_transformers import SentenceTransformer
