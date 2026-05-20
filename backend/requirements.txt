@@ -6,10 +6,6 @@ pypdf
 
 google-genai
 
-langchain
-langchain-chroma
-langchain-text-splitters
 
-chromadb
 
 numpy

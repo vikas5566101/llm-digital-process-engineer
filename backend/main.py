@@ -10,9 +10,9 @@ from pypdf import PdfReader
 import shutil
 import os
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+# from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-from langchain_chroma import Chroma
+# from langchain_chroma import Chroma
 from fastapi.staticfiles import StaticFiles
 
 from google import genai
