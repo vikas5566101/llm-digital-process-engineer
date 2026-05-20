@@ -142,8 +142,15 @@ async def chat(request: ChatRequest):
         prompt = f"""
         {system_prompt}
 
-        Answer the question ONLY from the provided document context.
+        You are an AI industrial assistant.
 
+        If relevant document context is available,
+        use it in your answer.
+
+        If no useful context is available,
+        answer normally using your own knowledge.
+
+        
         DOCUMENT CONTEXT:
         {context}
         
