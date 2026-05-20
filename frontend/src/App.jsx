@@ -85,7 +85,7 @@ function App() {
         setLoading(true);
 
         const res = await axios.post(
-          "http://127.0.0.1:8000/upload",
+          "https://llm-digital-process-engineer.onrender.com/upload",
           formData,
           {
             headers: {
@@ -137,6 +137,8 @@ function App() {
 
     setMessages((prev) => [...prev, userMessage]);
 
+    const currentMessage = message;
+
     setChatHistory((prev) => [
       ...prev,
       {
@@ -145,7 +147,7 @@ function App() {
       }
     ]);
 
-    const currentMessage = message;
+    
 
     setMessage("");
 
@@ -154,7 +156,7 @@ function App() {
     try {
 
       const res = await axios.post(
-        "http://127.0.0.1:8000/chat",
+        "https://llm-digital-process-engineer.onrender.com/chat",
         {
           message: currentMessage,
           mode : mode,
@@ -234,6 +236,7 @@ function App() {
 
                 <div
                   key={index}
+                  onClick={() => setActivePDF(doc)}
                   className="bg-slate-800/70 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 truncate"
                 >
                   📄 {doc}
@@ -256,7 +259,7 @@ function App() {
 
             <div
               key={item}
-              onClick={() => setMode(item)}
+              // onClick={() => setMode(item)}
               className={`p-4 rounded-2xl cursor-pointer border shadow-lg transition duration-300 ${
                 mode === item
                   ? "bg-emerald-400 text-black border-emerald-300"
@@ -487,7 +490,7 @@ function App() {
                 </span>
 
                 <span className="text-emerald-400">
-                  Active
+                  Local Only
                 </span>
               </div>
 
@@ -517,6 +520,7 @@ function App() {
 
                   <motion.div
                     key={index}
+                    onClick={() => setActivePDF(doc)}
                     initial={{
                       opacity: 0,
                       x: 20
@@ -562,7 +566,7 @@ function App() {
               {activePDF ? (
 
                 <iframe
-                  src={`http://127.0.0.1:8000/uploads/${activePDF}`}
+                  src={`https://llm-digital-process-engineer.onrender.com/uploads/${activePDF}`}
                   title="PDF Preview"
                   className="w-full h-full"
                 />
